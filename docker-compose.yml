@@ -1,0 +1,15 @@
+version: '3.4'
+
+services:
+    weatherservice:
+        image: ${DOCKER_REGISTRY-}weatherservice
+        build:
+            context: .
+            dockerfile: src/BlazorAdmin/Dockerfile
+        depends_on:
+            - "weatherservicepublicapi"
+    weatherservicepublicapi:
+        image: ${DOCKER_REGISTRY-}weatherservicepublicapi
+        build:
+            context: .
+            dockerfile: src/PublicAPI/Dockerfile

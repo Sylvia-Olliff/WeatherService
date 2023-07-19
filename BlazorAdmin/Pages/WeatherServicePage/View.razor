@@ -1,0 +1,119 @@
+﻿@inject ILogger<View> Logger
+@inject IJSRuntime JSRuntime
+@inject IWeatherReportService WeatherReportService
+
+@inherits BlazorAdmin.Helpers.BlazorComponent
+@namespace BlazorAdmin.Pages.WeatherServicePage
+
+<div class="modal @_modalClass" tabindex="-1" role="dialog" style="display:@_modalDisplay">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="weatherReportModalLabel">Weather Report for @_location.City</h5>
+                <button type="button" class="btn-close" data-dismiss="modal" aria-label="Close" @onclick="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                
+                @if (_weatherData == null)
+                {
+                    <Spinner></Spinner>
+                }
+                else
+                {
+                    <div class="container">
+                        <div class="row">
+                            <dl class="col-md-6 dl-horizontal">
+                                <dt>City</dt><dd>@_location.City</dd>
+
+                                <dt>State Code</dt><dd>@_location.StateCode</dd>
+
+                                <dt>Country Code</dt><dd>@_location.Country</dd>
+                            </dl>
+                        </div>
+                        <div class="row">
+                            <dl class="col-md-8 dl-horizontal">
+                                <dt>Current Temperature F: </dt><dd>@_weatherData.CurrentForecast.TempF</dd>
+                                <dt>Feels Like F: </dt><dd>@_weatherData.CurrentForecast.FeelsTempF</dd>
+
+                                <dt>Current Temperature C: </dt><dd>@_weatherData.CurrentForecast.TempC</dd>
+                                <dt>Feels Like C: </dt><dd>@_weatherData.CurrentForecast.FeelsTempC</dd>
+                            </dl>
+                        </div>
+                        <div class="row">
+                            <dl class="col-md-8 dl-horizontal">
+                                <dt>Humidity: </dt><dd>@_weatherData.CurrentForecast.Humidity</dd>
+
+                                <dt>Precipitation Chance: </dt><dd>@_weatherData.CurrentForecast.PrecipitationChance %</dd>
+                            </dl>
+                        </div>
+                        <hr />
+                        <h5>Hourly Forecast</h5>
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th></th>
+                                    <th>Time</th>
+                                    <th>Temperature</th>
+                                    <th>Precipitation</th>
+                                    <th>Humidity</th>
+                                </tr>
+                            </thead>
+                            <tbody class="cursor-pointer">
+                                @foreach (var entry in _weatherData.HourlyForecast)
+                                {
+                                    <tr>
+                                        <td>*</td>
+                                        <td>@entry.Key.Hour</td>
+                                        <td>@entry.Value.TempF / @entry.Value.FeelsTempF</td>
+                                        <td>@entry.Value.PrecipitationChance %</td>
+                                        <td>@entry.Value.Humidity</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private Location _location = new Location();
+    private WeatherData _weatherData = new WeatherData();
+
+    private string _modalDisplay = "none;";
+    private string _modalClass = "";
+    private bool _showViewModal = false;
+
+    public async Task Open(Location location)
+    {
+        Logger.LogInformation("Now loading... /api/weather?lat={Lat}&lon={Lon}", location.Latitude, location.Longitude);
+
+        await new Css(JSRuntime).HideBodyOverflow();
+
+        _location = location;
+        _weatherData = await WeatherReportService.GetWeatherData(new GetWeatherDataRequest
+            {
+                Latitude = (double)_location.Latitude,
+                Longitude = (double)_location.Longitude
+            });
+
+        _modalDisplay = "block;";
+        _modalClass = "Show";
+        _showViewModal = true;
+
+        StateHasChanged();
+    }
+
+    public async Task Close()
+    {
+        await new Css(JSRuntime).ShowBodyOverflow();
+
+        _modalDisplay = "none;";
+        _modalClass = "";
+        _showViewModal = false;
+    }
+}
